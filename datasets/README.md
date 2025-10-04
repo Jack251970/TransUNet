@@ -26,4 +26,40 @@
         └── train_npz
             ├── case0005_slice000.npz
             └── *.npz
+TransUNet
+└── data
+    └──ToothSegmDataset
+        └── trainset_valset (base_dir)
+            ├── 0
+            ├── 1
+            │   ├── train
+            │   │   ├── 121_11
+            │   │        ├── 000_mask.jpg
+            │   │        ├── 000_rgb.jpg
+            │   │        └── ...
+            │   └── val
+            │       ├── 220_11
+            │       │    ├── 000_mask.jpg
+            │       │    ├── 000_rgb.jpg
+            │       │    └── ...
+            │       ├── ...
+            │       └── 25839_11
+            └── ...       ├── 000_mask.jpg
+                          ├── 000_rgb.jpg
+                          └── ...
+How to read its mask?
+import cv2
+import numpy as np
+def read_mask(mask_path):
+   # value:1 upper
+   # value:2 lower
+   # value:3 a tooth
+   mask_img = cv2.imread(mask_path,-1)
+   mask_upper = np.zeros_like(mask_img)
+   mask_upper = np.where(mask_img==1,255,0)
+   mask_lower = np.zeros_like(mask_img)
+   mask_lower = np.where(mask_img==2,255,0)
+   mask_tooth = np.zeros_like(mask_img)
+   mask_tooth = np.where(mask_img==3,255,0)
+   return mask_upper,mask_lower,mask_tooth
 ```
