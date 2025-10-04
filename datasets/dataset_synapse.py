@@ -84,4 +84,11 @@ class Synapse_dataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
         sample['case_name'] = self.sample_list[idx].strip('\n')
+
+        # get the min and max number of label figure
+        # label_figure = sample['label'].numpy()
+        # min_value_in_label_figure = np.min(label_figure)
+        # max_value_in_label_figure = np.max(label_figure)
+        # print("min and max value in label figure: ", min_value_in_label_figure, max_value_in_label_figure) # 0,8
+
         return sample  # image: (1, 224, 224), label: (224, 224), case_name: str
