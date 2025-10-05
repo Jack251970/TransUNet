@@ -115,7 +115,7 @@ def trainer_synapse(args, model, snapshot_path):
 
             just_improved = early_stopper.step(loss)
             if just_improved:
-                save_mode_path = os.path.join(snapshot_path, 'best.pth')
+                save_mode_path = os.path.join(snapshot_path, 'best_model.pth')
                 torch.save(model.state_dict(), save_mode_path)
                 logging.info("save model to {}".format(save_mode_path))
             if early_stopper.should_stop:
@@ -130,13 +130,13 @@ def trainer_synapse(args, model, snapshot_path):
         # if epoch_avg_loss < best_loss:
         #     best_loss = epoch_avg_loss
         #     improved = True
-        #     save_mode_path = os.path.join(snapshot_path, 'best.pth')
+        #     save_mode_path = os.path.join(snapshot_path, 'best_model.pth')
         #     torch.save(model.state_dict(), save_mode_path)
         #     logging.info(f"New best model saved to {save_mode_path}")
         #
         # just_improved = early_stopper.step(epoch_avg_loss)
         # if just_improved and not improved:
-        #     save_mode_path = os.path.join(snapshot_path, 'best.pth')
+        #     save_mode_path = os.path.join(snapshot_path, 'best_model.pth')
         #     torch.save(model.state_dict(), save_mode_path)
         #     logging.info("save model to {}".format(save_mode_path))
         # if early_stopper.should_stop:
