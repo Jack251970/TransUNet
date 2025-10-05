@@ -16,6 +16,27 @@ from utils import DiceLoss
 from torchvision import transforms
 
 
+class EarlyStopping:
+    def __init__(self, patience: int, min_delta: float = 0.0):
+        self.patience = patience
+        self.min_delta = min_delta
+
+        self.best = None
+        self.num_bad_epochs = 0
+        self.should_stop = False
+
+    def step(self, current_value: float):
+        if self.best is None or current_value < self.best - self.min_delta:
+            self.best = current_value
+            self.num_bad_epochs = 0
+            return True  # improved
+        else:
+            self.num_bad_epochs += 1
+            if self.num_bad_epochs >= self.patience:
+                self.should_stop = True
+            return False  # no improvement
+
+
 def worker_init_fn(worker_id):
     random.seed(1234 + worker_id)  # TODO: Use args.seed
 
@@ -48,9 +69,20 @@ def trainer_synapse(args, model, snapshot_path):
     max_epoch = args.max_epochs
     max_iterations = args.max_epochs * len(trainloader)  # max_epoch = max_iterations // len(trainloader) + 1
     logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
-    best_performance = 0.0
+
+    # Early stopping init
+    early_stopper = EarlyStopping(patience=10, min_delta=0.0)
+    logging.info(f"Early stopping enabled (patience={early_stopper.patience}, "
+                 f"min_delta={early_stopper.min_delta})")
+
+    iter_num = 0
+    best_loss = float("inf")
     iterator = tqdm(range(max_epoch), ncols=70)
+
     for epoch_num in iterator:
+        epoch_loss_sum = 0.0
+        epoch_batches = 0
+
         for i_batch, sampled_batch in enumerate(trainloader):
             image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
             image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
@@ -80,6 +112,36 @@ def trainer_synapse(args, model, snapshot_path):
                 writer.add_image('train/Prediction', outputs[1, ...] * 50, iter_num)
                 labs = label_batch[1, ...].unsqueeze(0) * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
+
+            just_improved = early_stopper.step(loss)
+            if just_improved:
+                save_mode_path = os.path.join(snapshot_path, 'best.pth')
+                torch.save(model.state_dict(), save_mode_path)
+                logging.info("save model to {}".format(save_mode_path))
+            if early_stopper.should_stop:
+                logging.info("Early stopping triggered. Stopping training.")
+                break
+
+        # epoch_avg_loss = epoch_loss_sum / max(1, epoch_batches)
+        # writer.add_scalar('epoch/avg_loss', epoch_avg_loss, epoch_num)
+        # logging.info(f"Epoch {epoch_num} avg_loss={epoch_avg_loss:.6f}")
+        #
+        # improved = False
+        # if epoch_avg_loss < best_loss:
+        #     best_loss = epoch_avg_loss
+        #     improved = True
+        #     save_mode_path = os.path.join(snapshot_path, 'best.pth')
+        #     torch.save(model.state_dict(), save_mode_path)
+        #     logging.info(f"New best model saved to {save_mode_path}")
+        #
+        # just_improved = early_stopper.step(epoch_avg_loss)
+        # if just_improved and not improved:
+        #     save_mode_path = os.path.join(snapshot_path, 'best.pth')
+        #     torch.save(model.state_dict(), save_mode_path)
+        #     logging.info("save model to {}".format(save_mode_path))
+        # if early_stopper.should_stop:
+        #     logging.info("Early stopping triggered. Stopping training.")
+        #     break
 
         save_interval = 50  # int(max_epoch/6)
         if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
