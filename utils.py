@@ -118,7 +118,6 @@ def test_single_volume_for_tooth(args, image, label, net, classes, patch_size=[2
     # Convert to torch tensors
     image = torch.from_numpy(image.astype(np.float32)).permute(2, 0, 1)  # C, H, W
     image = image.unsqueeze(0)  # 1, C, H, W
-    label = label.unsqueeze(0)  # 1, H, W
 
     # prediction
     # dice_loss = DiceLoss(args.num_classes)
