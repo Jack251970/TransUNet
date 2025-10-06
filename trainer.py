@@ -90,6 +90,9 @@ def trainer_synapse(args, model, snapshot_path):
             # print(image_batch.shape, label_batch.shape)  # torch.Size([24, 1, 224, 224]) torch.Size([24, 224, 224])
 
             outputs = model(image_batch)
+
+            # print(outputs.shape, label_batch.shape)  # torch.Size([24, 9, 224, 224]) torch.Size([24, 224, 224])
+
             loss_ce = ce_loss(outputs, label_batch[:].long())
             loss_dice = dice_loss(outputs, label_batch, softmax=True)
             loss = 0.5 * loss_ce + 0.5 * loss_dice
@@ -210,6 +213,9 @@ def trainer_toothsegm(args, model, snapshot_path):
             # print(image_batch.shape, label_batch.shape)  # torch.Size([24, 3, 224, 224]) torch.Size([24, 224, 224])
 
             outputs = model(image_batch)
+
+            # print(outputs.shape, label_batch.shape)  # torch.Size([24, 5, 224, 224]) torch.Size([24, 224, 224])
+
             loss_ce = ce_loss(outputs, label_batch[:].long())
             loss_dice = dice_loss(outputs, label_batch, softmax=True)
             loss = 0.5 * loss_ce + 0.5 * loss_dice
