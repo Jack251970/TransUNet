@@ -87,7 +87,11 @@ if __name__ == "__main__":
     if args.vit_name.find('R50') != -1:
         config_vit.patches.grid = (int(args.img_size / args.vit_patches_size), int(args.img_size / args.vit_patches_size))
     net = ViT_seg(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
-    net.load_from(weights=np.load(config_vit.pretrained_path))
+    if not os.path.exists(config_vit.pretrained_path):
+        raise Exception("You need to download the pre-trained weights first!")
+    weights = np.load(config_vit.pretrained_path)
+    # print(list(weights.keys()))
+    net.load_from(weights=weights)
 
     trainer = {'Synapse': trainer_synapse,}
     trainer[dataset_name](args, net, snapshot_path)

@@ -74,42 +74,40 @@ class PreActBottleneck(nn.Module):
         return y
 
     def load_from(self, weights, n_block, n_unit):
-        # TODO: Fix issue here
-        pass
-        # conv1_weight = np2th(weights[pjoin(n_block, n_unit, "conv1/kernel")], conv=True)
-        # conv2_weight = np2th(weights[pjoin(n_block, n_unit, "conv2/kernel")], conv=True)
-        # conv3_weight = np2th(weights[pjoin(n_block, n_unit, "conv3/kernel")], conv=True)
-        #
-        # gn1_weight = np2th(weights[pjoin(n_block, n_unit, "gn1/scale")])
-        # gn1_bias = np2th(weights[pjoin(n_block, n_unit, "gn1/bias")])
-        #
-        # gn2_weight = np2th(weights[pjoin(n_block, n_unit, "gn2/scale")])
-        # gn2_bias = np2th(weights[pjoin(n_block, n_unit, "gn2/bias")])
-        #
-        # gn3_weight = np2th(weights[pjoin(n_block, n_unit, "gn3/scale")])
-        # gn3_bias = np2th(weights[pjoin(n_block, n_unit, "gn3/bias")])
-        #
-        # self.conv1.weight.copy_(conv1_weight)
-        # self.conv2.weight.copy_(conv2_weight)
-        # self.conv3.weight.copy_(conv3_weight)
-        #
-        # self.gn1.weight.copy_(gn1_weight.view(-1))
-        # self.gn1.bias.copy_(gn1_bias.view(-1))
-        #
-        # self.gn2.weight.copy_(gn2_weight.view(-1))
-        # self.gn2.bias.copy_(gn2_bias.view(-1))
-        #
-        # self.gn3.weight.copy_(gn3_weight.view(-1))
-        # self.gn3.bias.copy_(gn3_bias.view(-1))
-        #
-        # if hasattr(self, 'downsample'):
-        #     proj_conv_weight = np2th(weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True)
-        #     proj_gn_weight = np2th(weights[pjoin(n_block, n_unit, "gn_proj/scale")])
-        #     proj_gn_bias = np2th(weights[pjoin(n_block, n_unit, "gn_proj/bias")])
-        #
-        #     self.downsample.weight.copy_(proj_conv_weight)
-        #     self.gn_proj.weight.copy_(proj_gn_weight.view(-1))
-        #     self.gn_proj.bias.copy_(proj_gn_bias.view(-1))
+        conv1_weight = np2th(weights[pjoin(n_block, n_unit, "conv1/kernel")], conv=True)
+        conv2_weight = np2th(weights[pjoin(n_block, n_unit, "conv2/kernel")], conv=True)
+        conv3_weight = np2th(weights[pjoin(n_block, n_unit, "conv3/kernel")], conv=True)
+
+        gn1_weight = np2th(weights[pjoin(n_block, n_unit, "gn1/scale")])
+        gn1_bias = np2th(weights[pjoin(n_block, n_unit, "gn1/bias")])
+
+        gn2_weight = np2th(weights[pjoin(n_block, n_unit, "gn2/scale")])
+        gn2_bias = np2th(weights[pjoin(n_block, n_unit, "gn2/bias")])
+
+        gn3_weight = np2th(weights[pjoin(n_block, n_unit, "gn3/scale")])
+        gn3_bias = np2th(weights[pjoin(n_block, n_unit, "gn3/bias")])
+
+        self.conv1.weight.copy_(conv1_weight)
+        self.conv2.weight.copy_(conv2_weight)
+        self.conv3.weight.copy_(conv3_weight)
+
+        self.gn1.weight.copy_(gn1_weight.view(-1))
+        self.gn1.bias.copy_(gn1_bias.view(-1))
+
+        self.gn2.weight.copy_(gn2_weight.view(-1))
+        self.gn2.bias.copy_(gn2_bias.view(-1))
+
+        self.gn3.weight.copy_(gn3_weight.view(-1))
+        self.gn3.bias.copy_(gn3_bias.view(-1))
+
+        if hasattr(self, 'downsample'):
+            proj_conv_weight = np2th(weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True)
+            proj_gn_weight = np2th(weights[pjoin(n_block, n_unit, "gn_proj/scale")])
+            proj_gn_bias = np2th(weights[pjoin(n_block, n_unit, "gn_proj/bias")])
+
+            self.downsample.weight.copy_(proj_conv_weight)
+            self.gn_proj.weight.copy_(proj_gn_weight.view(-1))
+            self.gn_proj.bias.copy_(proj_gn_bias.view(-1))
 
 class ResNetV2(nn.Module):
     """Implementation of Pre-activation (v2) ResNet mode."""
@@ -126,18 +124,19 @@ class ResNetV2(nn.Module):
             # ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=0))
         ]))
 
+        # CHANGE: Use / here
         self.body = nn.Sequential(OrderedDict([
-            ('block1', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width, cout=width*4, cmid=width))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*4, cout=width*4, cmid=width)) for i in range(2, block_units[0] + 1)],
+            ('block1/', nn.Sequential(OrderedDict(
+                [('unit1/', PreActBottleneck(cin=width, cout=width*4, cmid=width))] +
+                [(f'unit{i:d}/', PreActBottleneck(cin=width*4, cout=width*4, cmid=width)) for i in range(2, block_units[0] + 1)],
                 ))),
-            ('block2', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*4, cout=width*8, cmid=width*2, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*8, cout=width*8, cmid=width*2)) for i in range(2, block_units[1] + 1)],
+            ('block2/', nn.Sequential(OrderedDict(
+                [('unit1/', PreActBottleneck(cin=width*4, cout=width*8, cmid=width*2, stride=2))] +
+                [(f'unit{i:d}/', PreActBottleneck(cin=width*8, cout=width*8, cmid=width*2)) for i in range(2, block_units[1] + 1)],
                 ))),
-            ('block3', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*8, cout=width*16, cmid=width*4, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*16, cout=width*16, cmid=width*4)) for i in range(2, block_units[2] + 1)],
+            ('block3/', nn.Sequential(OrderedDict(
+                [('unit1/', PreActBottleneck(cin=width*8, cout=width*16, cmid=width*4, stride=2))] +
+                [(f'unit{i:d}/', PreActBottleneck(cin=width*16, cout=width*16, cmid=width*4)) for i in range(2, block_units[2] + 1)],
                 ))),
         ]))
 
