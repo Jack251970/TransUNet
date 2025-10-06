@@ -24,15 +24,15 @@ parser.add_argument('--num_classes', type=int,
 parser.add_argument('--list_dir', type=str,
                     default='./lists/lists_Synapse', help='list dir')
 
-parser.add_argument('--max_iterations', type=int,default=20000, help='maximum epoch number to train')
-parser.add_argument('--max_epochs', type=int, default=30, help='maximum epoch number to train')
+parser.add_argument('--max_iterations', type=int,default=150, help='maximum epoch number to train')
+parser.add_argument('--max_epochs', type=int, default=150, help='maximum epoch number to train')
 parser.add_argument('--batch_size', type=int, default=24,
                     help='batch_size per gpu')
 parser.add_argument('--img_size', type=int, default=224, help='input patch size of network input')
 parser.add_argument('--is_savenii', action="store_true", help='whether to save results during inference')
 
 parser.add_argument('--n_skip', type=int, default=3, help='using number of skip-connect, default is num')
-parser.add_argument('--vit_name', type=str, default='ViT-B_16', help='select one vit model')
+parser.add_argument('--vit_name', type=str, default='R50-ViT-B_16', help='select one vit model')
 
 parser.add_argument('--test_save_dir', type=str, default='./predictions', help='saving prediction as nii!')
 parser.add_argument('--deterministic', type=int,  default=1, help='whether use deterministic training')
@@ -119,6 +119,8 @@ if __name__ == "__main__":
 
     snapshot = os.path.join(snapshot_path, 'best_model.pth')
     if not os.path.exists(snapshot): snapshot = snapshot.replace('best_model', 'epoch_'+str(args.max_epochs-1))
+    if not os.path.exists(snapshot):
+        raise Exception(f"You need to train the model first! {snapshot}")
     net.load_state_dict(torch.load(snapshot))
     snapshot_name = snapshot_path.split('/')[-1]
 
@@ -136,5 +138,3 @@ if __name__ == "__main__":
     else:
         test_save_path = None
     inference(args, net, test_save_path)
-
-
