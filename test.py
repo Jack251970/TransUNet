@@ -50,7 +50,13 @@ def inference(args, model, test_save_path=None):
     metric_list = 0.0
     for i_batch, sampled_batch in tqdm(enumerate(testloader)):
         h, w = sampled_batch["image"].size()[2:]
+        # print(h, '*', w)
         image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
+        # 1, 148, 512, 512
+        # 1: Batch size
+        # 148: slice number of this case
+        # 512*512: image size
+        # print(image.shape, label.shape, case_name)
         metric_i = test_single_volume(image, label, model, classes=args.num_classes, patch_size=[args.img_size, args.img_size],
                                       test_save_path=test_save_path, case=case_name, z_spacing=args.z_spacing)
         metric_list += np.array(metric_i)
