@@ -188,6 +188,15 @@ def trainer_toothsegm(args, model, snapshot_path):
     max_epoch = args.max_epochs
     max_iterations = args.max_epochs * len(trainloader)  # max_epoch = max_iterations // len(trainloader) + 1
     logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
+
+    # Early stopping init
+    early_stopper = EarlyStopping(patience=10, min_delta=0.0)
+    logging.info(f"Early stopping enabled (patience={early_stopper.patience}, "
+                 f"min_delta={early_stopper.min_delta})")
+
+    iter_num = 0
+    best_loss = float("inf")
+
     best_performance = 0.0
     iterator = tqdm(range(max_epoch), ncols=70)
     for epoch_num in iterator:
@@ -221,6 +230,15 @@ def trainer_toothsegm(args, model, snapshot_path):
                 labs = label_batch[1, ...].unsqueeze(0) * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
 
+            just_improved = early_stopper.step(loss)
+            if just_improved:
+                save_mode_path = os.path.join(snapshot_path, 'best_model.pth')
+                torch.save(model.state_dict(), save_mode_path)
+                logging.info("save model to {}".format(save_mode_path))
+            if early_stopper.should_stop:
+                logging.info("Early stopping triggered. Stopping training.")
+                break
+
         save_interval = 50  # int(max_epoch/6)
         if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
             save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
@@ -232,6 +250,10 @@ def trainer_toothsegm(args, model, snapshot_path):
             torch.save(model.state_dict(), save_mode_path)
             logging.info("save model to {}".format(save_mode_path))
             iterator.close()
+            break
+
+        if early_stopper.should_stop:
+            logging.info("Early stopping triggered. Stopping training.")
             break
 
     writer.close()
