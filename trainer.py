@@ -139,9 +139,10 @@ def trainer_synapse(args, model, snapshot_path):
         #     save_mode_path = os.path.join(snapshot_path, 'best_model.pth')
         #     torch.save(model.state_dict(), save_mode_path)
         #     logging.info("save model to {}".format(save_mode_path))
-        # if early_stopper.should_stop:
-        #     logging.info("Early stopping triggered. Stopping training.")
-        #     break
+
+        if early_stopper.should_stop:
+            logging.info("Early stopping triggered. Stopping training.")
+            break
 
         save_interval = 50  # int(max_epoch/6)
         if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
