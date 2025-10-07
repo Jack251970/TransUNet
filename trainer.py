@@ -179,10 +179,15 @@ def trainer_toothsegm(args, model, snapshot_path):
     # max_iterations = args.max_iterations
     db_train = ToothSegmDataset(base_dir=args.root_path, split="train",
                                 transform=transforms.Compose([RandomGenerator(output_size=[args.img_size, args.img_size])]))
+    db_val = ToothSegmDataset(base_dir=args.root_path, split="val",
+                              transform=transforms.Compose([RandomGenerator(output_size=[args.img_size, args.img_size])]))
     print("The length of train set is: {}".format(len(db_train)))
+    print("The length of val set is: {}".format(len(db_val)))
 
     trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True,
                              worker_init_fn=worker_init_fn)
+    valloader = DataLoader(db_val, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
+                           worker_init_fn=worker_init_fn)
     if args.n_gpu > 1:
         model = nn.DataParallel(model)
     model.train()
@@ -196,7 +201,7 @@ def trainer_toothsegm(args, model, snapshot_path):
     logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
 
     # Early stopping init
-    early_stopper = EarlyStopping(patience=500, min_delta=0.0)
+    early_stopper = EarlyStopping(patience=10, min_delta=0.0)
     logging.info(f"Early stopping enabled (patience={early_stopper.patience}, "
                  f"min_delta={early_stopper.min_delta})")
 
@@ -238,6 +243,39 @@ def trainer_toothsegm(args, model, snapshot_path):
 
             logging.info('iteration %d : loss : %f, loss_ce: %f' % (iter_num, loss.item(), loss_ce.item()))
 
+            # Get validation loss and use it for early stopping
+            if iter_num % 5 == 0:
+                model.eval()
+                val_loss_sum = 0.0
+                val_batches = 0
+                with torch.no_grad():
+                    for j_batch, val_sampled_batch in enumerate(valloader):
+                        val_image_batch, val_label_batch = val_sampled_batch['image'], val_sampled_batch['label']
+                        val_image_batch, val_label_batch = val_image_batch.cuda(), val_label_batch.cuda()
+
+                        val_outputs = model(val_image_batch)
+
+                        val_loss_ce = ce_loss(val_outputs, val_label_batch[:].long())
+                        val_loss_dice = dice_loss(val_outputs, val_label_batch, softmax=True)
+                        val_loss = 0.5 * val_loss_ce + 0.5 * val_loss_dice
+
+                        val_loss_sum += val_loss.item()
+                        val_batches += 1
+
+                avg_val_loss = val_loss_sum / max(1, val_batches)
+                writer.add_scalar('info/val_loss', avg_val_loss, iter_num)
+                logging.info(f'Validation loss after {iter_num} iterations: {avg_val_loss:.6f}')
+                model.train()
+
+                just_improved = early_stopper.step(avg_val_loss)
+                if just_improved:
+                    save_mode_path = os.path.join(snapshot_path, 'best_model.pth')
+                    torch.save(model.state_dict(), save_mode_path)
+                    logging.info("save model to {}".format(save_mode_path))
+                if early_stopper.should_stop:
+                    logging.info("Early stopping triggered. Stopping training.")
+                    break
+
             if iter_num % 20 == 0:
                 image = image_batch[1, 0:1, :, :]
                 image = (image - image.min()) / (image.max() - image.min())
@@ -246,15 +284,6 @@ def trainer_toothsegm(args, model, snapshot_path):
                 writer.add_image('train/Prediction', outputs[1, ...] * 50, iter_num)
                 labs = label_batch[1, ...].unsqueeze(0) * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
-
-            just_improved = early_stopper.step(loss)
-            if just_improved:
-                save_mode_path = os.path.join(snapshot_path, 'best_model.pth')
-                torch.save(model.state_dict(), save_mode_path)
-                logging.info("save model to {}".format(save_mode_path))
-            if early_stopper.should_stop:
-                logging.info("Early stopping triggered. Stopping training.")
-                break
 
         save_interval = 50  # int(max_epoch/6)
         if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
