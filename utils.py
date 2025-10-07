@@ -153,33 +153,34 @@ def test_single_volume_for_tooth(args, image, label, net, classes, patch_size=[2
         lab_itk.SetSpacing((1, 1, z_spacing))
         sitk.WriteImage(prd_itk, test_save_path + '/' + case + "_pred.nii.gz")
         sitk.WriteImage(img_itk, test_save_path + '/' + case + "_img.nii.gz")
-        sitk.WriteImage(lab_itk, test_save_path + '/' + case + "_gt.nii.gz")
+        sitk.WriteImage(lab_itk, test_save_path + '/' + case + "_gt.nii.gz")\
 
-    # TODO: Test visualization
-    # # Visualize
-    # image = image.squeeze(0).permute(1, 2, 0).numpy()  # (H,W,C)
-    # label = label  # (H,W)
-    # plt.figure(figsize=(10, 5))
-    # plt.subplot(1, 3, 1)
-    # plt.title("Image")
-    # plt.imshow(image.astype(np.uint8))
-    # plt.axis('off')
-    # plt.subplot(1, 3, 2)
-    # plt.title("Label")
-    # plt.imshow(label, cmap='jet', vmin=0, vmax=8)
-    # plt.axis('off')
-    # plt.subplot(1, 3, 3)
-    # plt.title("Prediction")
-    # plt.imshow(prediction, cmap='jet', vmin=0, vmax=8)
-    # plt.axis('off')
-    # plt.show()
-    #
-    # # Visualize with show_anns
-    # vis_img = show_anns(image.astype(np.uint8), out, tooth_id=tooth_id, borders=True)
-    # plt.figure(figsize=(5, 5))
-    # plt.title(f"Visualization for Tooth ID {tooth_id}")
-    # plt.imshow(vis_img.astype(np.uint8))
-    # plt.axis('off')
-    # plt.show()
+    average_dice = np.mean(metric_list, axis=0)[0]
+    if average_dice > 0.85:
+        # Visualize
+        image = image.squeeze(0).permute(1, 2, 0).numpy()  # (H,W,C)
+        label = label  # (H,W)
+        plt.figure(figsize=(10, 5))
+        plt.subplot(1, 3, 1)
+        plt.title("Image")
+        plt.imshow(image.astype(np.uint8))
+        plt.axis('off')
+        plt.subplot(1, 3, 2)
+        plt.title("Label")
+        plt.imshow(label, cmap='jet', vmin=0, vmax=8)
+        plt.axis('off')
+        plt.subplot(1, 3, 3)
+        plt.title("Prediction")
+        plt.imshow(prediction, cmap='jet', vmin=0, vmax=8)
+        plt.axis('off')
+        plt.show()
+
+        # Visualize with show_anns
+        vis_img = show_anns(image.astype(np.uint8), out, tooth_id=tooth_id, borders=True)
+        plt.figure(figsize=(5, 5))
+        plt.title(f"Visualization for Tooth ID {tooth_id}")
+        plt.imshow(vis_img.astype(np.uint8))
+        plt.axis('off')
+        plt.show()
 
     return metric_list
