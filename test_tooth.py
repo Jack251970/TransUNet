@@ -83,7 +83,7 @@ if __name__ == "__main__":
             'Dataset': ToothSegmDataset,
             'volume_path': './data/ToothSegmDataset/trainset_valset',
             'list_dir': './data/ToothSegmDataset/trainset_valset',
-            'num_classes': 5,
+            'num_classes': 4,
             'z_spacing': 1,
         },
     }

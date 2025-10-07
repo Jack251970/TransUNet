@@ -59,7 +59,7 @@ if __name__ == "__main__":
         'ToothSegmDataset': {
             'root_path': './data/ToothSegmDataset/trainset_valset',
             'list_dir': './data/ToothSegmDataset/trainset_valset',
-            'num_classes': 5,
+            'num_classes': 4,
         },
     }
     args.num_classes = dataset_config[dataset_name]['num_classes']
