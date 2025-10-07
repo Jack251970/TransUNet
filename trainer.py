@@ -208,6 +208,11 @@ def trainer_toothsegm(args, model, snapshot_path):
     for epoch_num in iterator:
         for i_batch, sampled_batch in enumerate(trainloader):
             image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
+            # TODO: Ask why block: [23,0,0], thread: [755,0,0] Assertion `t >= 0 && t < n_classes` failed?
+            # Check label values before moving to CUDA
+            if not torch.all((label_batch >= 0) & (label_batch < num_classes)):
+                print("Invalid label values found:", label_batch.unique())
+                continue
             image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
 
             # print(image_batch.shape, label_batch.shape)  # torch.Size([24, 3, 224, 224]) torch.Size([24, 224, 224])
