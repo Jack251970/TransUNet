@@ -165,6 +165,7 @@ class ToothSegmDataset(Dataset):
                     self.sample_list.append({
                         "image": os.path.join(case_dir, rgb_file),
                         "label": os.path.join(case_dir, mask_file),
+                        "tooth_id": tooth_id,
                         "case_name": case_name
                     })
 
@@ -185,6 +186,7 @@ class ToothSegmDataset(Dataset):
             sample = self.transform(sample)
 
         sample["case_name"] = sample_info["case_name"]
+        sample["tooth_id"] = int(sample_info["tooth_id"])
 
         # get the min and max number of label figure
         # label_figure = sample['label'].numpy()

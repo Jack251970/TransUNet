@@ -1,9 +1,12 @@
 import numpy as np
 import torch
+from matplotlib import pyplot as plt
 from medpy import metric
 from scipy.ndimage import zoom
 import torch.nn as nn
 import SimpleITK as sitk
+
+from datasets.mask_visualization import show_anns
 
 
 class DiceLoss(nn.Module):
@@ -106,7 +109,7 @@ def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_s
 # image: B, H, W, C
 # label: B, H, W
 def test_single_volume_for_tooth(args, image, label, net, classes, patch_size=[256, 256], test_save_path=None,
-                                 case=None, z_spacing=1):
+                                 case=None, tooth_id=0, z_spacing=1):
     image = image.squeeze(0)  # H, W, C
     label = label.squeeze(0)  # H, W
 
@@ -122,6 +125,7 @@ def test_single_volume_for_tooth(args, image, label, net, classes, patch_size=[2
     # prediction
     # dice_loss = DiceLoss(args.num_classes)
     net.eval()
+    out = None  # [224, 224]
     prediction = None  # [H, W]
     with torch.no_grad():
         input = image.float().cuda()  # [1, 3, 224, 224]
@@ -147,8 +151,35 @@ def test_single_volume_for_tooth(args, image, label, net, classes, patch_size=[2
         img_itk.SetSpacing((1, 1, z_spacing))
         prd_itk.SetSpacing((1, 1, z_spacing))
         lab_itk.SetSpacing((1, 1, z_spacing))
-        sitk.WriteImage(prd_itk, test_save_path + '/'+case + "_pred.nii.gz")
-        sitk.WriteImage(img_itk, test_save_path + '/'+ case + "_img.nii.gz")
-        sitk.WriteImage(lab_itk, test_save_path + '/'+ case + "_gt.nii.gz")
+        sitk.WriteImage(prd_itk, test_save_path + '/' + case + "_pred.nii.gz")
+        sitk.WriteImage(img_itk, test_save_path + '/' + case + "_img.nii.gz")
+        sitk.WriteImage(lab_itk, test_save_path + '/' + case + "_gt.nii.gz")
+
+    # TODO: Test visualization
+    # # Visualize
+    # image = image.squeeze(0).permute(1, 2, 0).numpy()  # (H,W,C)
+    # label = label  # (H,W)
+    # plt.figure(figsize=(10, 5))
+    # plt.subplot(1, 3, 1)
+    # plt.title("Image")
+    # plt.imshow(image.astype(np.uint8))
+    # plt.axis('off')
+    # plt.subplot(1, 3, 2)
+    # plt.title("Label")
+    # plt.imshow(label, cmap='jet', vmin=0, vmax=8)
+    # plt.axis('off')
+    # plt.subplot(1, 3, 3)
+    # plt.title("Prediction")
+    # plt.imshow(prediction, cmap='jet', vmin=0, vmax=8)
+    # plt.axis('off')
+    # plt.show()
+    #
+    # # Visualize with show_anns
+    # vis_img = show_anns(image.astype(np.uint8), out, tooth_id=tooth_id, borders=True)
+    # plt.figure(figsize=(5, 5))
+    # plt.title(f"Visualization for Tooth ID {tooth_id}")
+    # plt.imshow(vis_img.astype(np.uint8))
+    # plt.axis('off')
+    # plt.show()
 
     return metric_list

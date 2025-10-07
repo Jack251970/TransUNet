@@ -51,10 +51,10 @@ def inference(args, model, test_save_path=None):
     model.eval()
     metric_list = 0.0
     for i_batch, sampled_batch in tqdm(enumerate(testloader)):
-        image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
+        image, label, case_name, tooth_id = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'], sampled_batch['tooth_id']
         metric_i = test_single_volume_for_tooth(args, image, label, model, classes=args.num_classes,
                                                 patch_size=[args.img_size, args.img_size], test_save_path=test_save_path,
-                                                case=case_name, z_spacing=args.z_spacing)
+                                                case=case_name, tooth_id=tooth_id, z_spacing=args.z_spacing)
         metric_list += np.array(metric_i)
         logging.info('idx %d case %s mean_dice %f mean_hd95 %f' % (i_batch, case_name, np.mean(metric_i, axis=0)[0], np.mean(metric_i, axis=0)[1]))
     metric_list = metric_list / len(db_test)
