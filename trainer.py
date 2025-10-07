@@ -196,7 +196,7 @@ def trainer_toothsegm(args, model, snapshot_path):
     logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
 
     # Early stopping init
-    early_stopper = EarlyStopping(patience=10, min_delta=0.0)
+    early_stopper = EarlyStopping(patience=50, min_delta=0.0)
     logging.info(f"Early stopping enabled (patience={early_stopper.patience}, "
                  f"min_delta={early_stopper.min_delta})")
 
