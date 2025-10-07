@@ -97,6 +97,9 @@ class RandomGenerator(object):
         image = torch.from_numpy(image.astype(np.float32)).permute(2, 0, 1)  # (C,H,W)
         label = torch.from_numpy(label.astype(np.float32))
 
+        # CHANGE: if label has any values greater than 3 like 4 and 5, convert them to 0
+        label = torch.where(label > 3, torch.tensor(0.0), label)
+
         sample = {'image': image, 'label': label.long()}
         return sample
 
