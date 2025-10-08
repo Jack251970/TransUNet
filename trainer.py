@@ -224,7 +224,7 @@ def trainer_toothsegm(args, model, snapshot_path):
 
             outputs = model(image_batch)
 
-            # print(outputs.shape, label_batch.shape)  # torch.Size([24, 5, 224, 224]) torch.Size([24, 224, 224])
+            # print(outputs.shape, label_batch.shape)  # torch.Size([24, 4, 224, 224]) torch.Size([24, 224, 224])
 
             loss_ce = ce_loss(outputs, label_batch[:].long())
             loss_dice = dice_loss(outputs, label_batch, softmax=True)
