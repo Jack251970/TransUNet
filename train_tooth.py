@@ -93,4 +93,10 @@ if __name__ == "__main__":
         'Synapse': trainer_synapse,
         'ToothSegmDataset': trainer_toothsegm,
     }
+    # Use torchinfo to output the model summary
+    from torchinfo import summary
+    summary(
+        net,
+        input_size=(1, 3, args.img_size, args.img_size)
+    )
     trainer[dataset_name](args, net, snapshot_path)
