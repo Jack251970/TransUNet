@@ -50,16 +50,50 @@ class DiceLoss(nn.Module):
 
 
 def calculate_metric_percase(pred, gt):
-    pred[pred > 0] = 1
-    gt[gt > 0] = 1
-    if pred.sum() > 0 and gt.sum() > 0:
-        dice = metric.binary.dc(pred, gt)
-        hd95 = metric.binary.hd95(pred, gt)
-        return dice, hd95
-    elif pred.sum() > 0 and gt.sum() == 0:
-        return 1, 0
+    """
+    Compute Dice, HD95, IoU (fg/bg), mean IoU, per-class accuracy, mean pixel accuracy.
+    Returns a dict of metrics.
+    """
+    pred_bin = (pred > 0).astype(np.uint8)
+    gt_bin = (gt > 0).astype(np.uint8)
+
+    tp = np.logical_and(pred_bin == 1, gt_bin == 1).sum()
+    fp = np.logical_and(pred_bin == 1, gt_bin == 0).sum()
+    fn = np.logical_and(pred_bin == 0, gt_bin == 1).sum()
+    tn = np.logical_and(pred_bin == 0, gt_bin == 0).sum()
+
+    # Dice & HD95 (keep original behavior)
+    if pred_bin.sum() > 0 and gt_bin.sum() > 0:
+        dice = metric.binary.dc(pred_bin, gt_bin)
+        hd95 = metric.binary.hd95(pred_bin, gt_bin)
+    elif pred_bin.sum() > 0 and gt_bin.sum() == 0:
+        dice = 1.0
+        hd95 = 0.0
     else:
-        return 0, 0
+        dice = 0.0
+        hd95 = 0.0
+
+    # Per-class accuracy
+    pa_fg = tp / (tp + fn) if (tp + fn) > 0 else 1.0
+    pa_bg = tn / (tn + fp) if (tn + fp) > 0 else 1.0
+    mpa = (pa_fg + pa_bg) / 2.0
+
+    # IoU foreground / background
+    iou_fg = tp / (tp + fp + fn) if (tp + fp + fn) > 0 else 1.0
+    iou_bg = tn / (tn + fp + fn) if (tn + fp + fn) > 0 else 1.0
+    miou = (iou_fg + iou_bg) / 2.0
+
+    # return {
+    #     "dice": dice,
+    #     "hd95": hd95,
+    #     "iou_fg": iou_fg,
+    #     "iou_bg": iou_bg,
+    #     "mIoU": miou,
+    #     "PA_fg": pa_fg,
+    #     "PA_bg": pa_bg,
+    #     "mPA": mpa
+    # }
+    return dice, hd95, mpa, iou_fg, iou_bg, miou
 
 
 def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_save_path=None, case=None, z_spacing=1):
@@ -153,7 +187,7 @@ def test_single_volume_for_tooth(args, image, label, net, classes, patch_size=[2
         lab_itk.SetSpacing((1, 1, z_spacing))
         sitk.WriteImage(prd_itk, test_save_path + '/' + case + "_pred.nii.gz")
         sitk.WriteImage(img_itk, test_save_path + '/' + case + "_img.nii.gz")
-        sitk.WriteImage(lab_itk, test_save_path + '/' + case + "_gt.nii.gz")\
+        sitk.WriteImage(lab_itk, test_save_path + '/' + case + "_gt.nii.gz")
 
     average_dice = np.mean(metric_list, axis=0)[0]
     if average_dice > 0.91:

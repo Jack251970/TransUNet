@@ -56,13 +56,27 @@ def inference(args, model, test_save_path=None):
                                                 patch_size=[args.img_size, args.img_size], test_save_path=test_save_path,
                                                 case=case_name, tooth_id=tooth_id, z_spacing=args.z_spacing)
         metric_list += np.array(metric_i)
-        logging.info('idx %d case %s mean_dice %f mean_hd95 %f' % (i_batch, case_name, np.mean(metric_i, axis=0)[0], np.mean(metric_i, axis=0)[1]))
+        # dice, hd95, mpa, iou_fg, iou_bg, miou
+        case_metrics = np.mean(metric_i, axis=0)
+        logging.info(
+            'idx %d case %s mean_dice %.4f mean_hd95 %.4f mPA %.4f IoU_FG %.4f IoU_BG %.4f mIoU %.4f' %
+            (i_batch, case_name, case_metrics[0], case_metrics[1], case_metrics[2],
+             case_metrics[3], case_metrics[4], case_metrics[5])
+        )
     metric_list = metric_list / len(db_test)
     for i in range(1, args.num_classes):
-        logging.info('Mean class %d mean_dice %f mean_hd95 %f' % (i, metric_list[i-1][0], metric_list[i-1][1]))
-    performance = np.mean(metric_list, axis=0)[0]
-    mean_hd95 = np.mean(metric_list, axis=0)[1]
-    logging.info('Testing performance in best val model: mean_dice : %f mean_hd95 : %f' % (performance, mean_hd95))
+        logging.info(
+            'Mean class %d dice %.4f hd95 %.4f mPA %.4f IoU_FG %.4f IoU_BG %.4f mIoU %.4f' %
+            (i, metric_list[i - 1][0], metric_list[i - 1][1], metric_list[i - 1][2],
+             metric_list[i - 1][3], metric_list[i - 1][4], metric_list[i - 1][5])
+        )
+    mean_metrics = np.mean(metric_list, axis=0)
+    performance, mean_hd95 = mean_metrics[0], mean_metrics[1]
+    mean_mpa, mean_iou_fg, mean_iou_bg, mean_miou = mean_metrics[2], mean_metrics[3], mean_metrics[4], mean_metrics[5]
+    logging.info(
+        'Testing performance in best val model: mean_dice: %.4f mean_hd95: %.4f mean_mPA: %.4f mean_IoU_FG: %.4f mean_IoU_BG: %.4f mean_mIoU: %.4f' %
+        (performance, mean_hd95, mean_mpa, mean_iou_fg, mean_iou_bg, mean_miou)
+    )
     return "Testing Finished!"
 
 
