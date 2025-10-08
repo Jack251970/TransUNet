@@ -157,48 +157,60 @@ if __name__ == "__main__":
         os.makedirs(test_save_path, exist_ok=True)
     else:
         test_save_path = None
-    # inference(args, net, test_save_path)
+    inference(args, net, test_save_path)
 
     # Output testset mask.jpg & visualization
     test_path = './data/ToothSegmDataset/testset'
     save_path = './data/ToothSegmDataset/testset_pred'
     os.makedirs(save_path, exist_ok=True)
-    for tooth_id in os.listdir(test_path):
-        tooth_dir = os.path.join(test_path, tooth_id)  # e.g., ToothSegmDataset/testset/0000
-        if not os.path.isdir(tooth_dir):
-            continue
 
-        rgb_files = sorted(
-            [f for f in os.listdir(tooth_dir) if f.endswith("_rgb.jpg")])  # e.g., ['000_rgb.jpg', '001_rgb.jpg', ...]
-        image_list = []
-        for rgb_file in rgb_files:
-            image = cv2.imread(os.path.join(tooth_dir, rgb_file))  # BGR
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image_list.append(image)
-        image_array = np.stack(image_list, axis=0)  # (slices, H, W, 3)
-        image_array = image_array.transpose(0, 3, 1, 2)  # (slices, 3, H, W)
-        image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()  # (1, slices, 3, H, W)
+    net.eval()
+    with torch.no_grad():
+        for tooth_id in os.listdir(test_path):
+            tooth_dir = os.path.join(test_path, tooth_id)
+            if not os.path.isdir(tooth_dir):
+                continue
 
-        net.eval()
-        with torch.no_grad():
-            preds = []
-            for i in range(image_tensor.shape[1]):
-                img = image_tensor[:, i, :, :, :].cuda()  # (1, 3, H, W)
-                output = net(img)  # (1, num_classes, H, W)
-                pred = torch.argmax(output, dim=1).squeeze(0).cpu().numpy()  # (H, W)
-                preds.append(pred)
-            pred_array = np.stack(preds, axis=0)  # (slices, H, W)
+            os.makedirs(os.path.join(save_path, tooth_id), exist_ok=True)
+            rgb_files = sorted([f for f in os.listdir(tooth_dir) if f.endswith("_rgb.jpg")])
+            for rgb_file in rgb_files:
+                # Read and prepare image (BGR -> RGB)
+                img_path = os.path.join(tooth_dir, rgb_file)
+                img_bgr = cv2.imread(img_path)
+                if img_bgr is None:
+                    continue
+                img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+                orig_h, orig_w = img_rgb.shape[:2]
 
-        # Save mask images and visualizations
-        for i, rgb_file in enumerate(rgb_files):
-            mask_img = (pred_array[i] * (255 // args.num_classes)).astype(np.uint8)  # Scale to [0, 255]
-            cv2.imwrite(os.path.join(save_path, rgb_file.replace('_rgb.jpg', '_mask.jpg')), mask_img)
+                # Resize to model expected size if needed
+                if (orig_h, orig_w) != (args.img_size, args.img_size):
+                    proc_img = cv2.resize(img_rgb, (args.img_size, args.img_size), interpolation=cv2.INTER_LINEAR)
+                else:
+                    proc_img = img_rgb
 
-            # Visualize with show_anns
-            vis_img = show_anns(image.astype(np.uint8), pred_array[i], tooth_id=tooth_id, borders=True)
-            plt.figure(figsize=(5, 5))
-            plt.title(f"Visualization for Tooth ID {tooth_id}")
-            plt.imshow(vis_img.astype(np.uint8))
-            plt.axis('off')
-            plt.savefig(os.path.join(save_path, rgb_file.replace('_rgb.jpg', '_vis.jpg')))
-            plt.close()
+                # To tensor
+                tensor = torch.from_numpy(proc_img.astype(np.float32)).permute(2, 0, 1).unsqueeze(0).cuda()
+
+                # Forward
+                output = net(tensor)  # [1, num_classes, H, W]
+                pred = torch.argmax(output, dim=1).squeeze(0).cpu().numpy()  # [H, W]
+
+                # Restore to original size if resized
+                if (orig_h, orig_w) != (args.img_size, args.img_size):
+                    pred = cv2.resize(pred.astype(np.uint8), (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
+
+                # Save mask
+                mask_img = pred.astype(np.uint8)
+                cv2.imwrite(os.path.join(save_path, tooth_id, rgb_file.replace('_rgb.jpg', '_mask.jpg')), mask_img)
+
+                mask_img = (pred * (255 // args.num_classes)).astype(np.uint8)
+                cv2.imwrite(os.path.join(save_path, tooth_id, rgb_file.replace('_rgb.jpg', '_mask_vis.jpg')), mask_img)
+
+                # Visualization using original RGB image
+                vis_img = show_anns(img_rgb.astype(np.uint8), pred, tooth_id=int(tooth_id), borders=True)
+                plt.figure(figsize=(5, 5))
+                plt.title(f"Visualization for Tooth ID {tooth_id}")
+                plt.imshow(vis_img.astype(np.uint8))
+                plt.axis('off')
+                plt.savefig(os.path.join(save_path, tooth_id, rgb_file.replace('_rgb.jpg', '_vis.jpg')))
+                plt.close()
