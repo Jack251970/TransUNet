@@ -157,7 +157,7 @@ if __name__ == "__main__":
         os.makedirs(test_save_path, exist_ok=True)
     else:
         test_save_path = None
-    inference(args, net, test_save_path)
+    # inference(args, net, test_save_path)
 
     # Output testset mask.jpg & visualization
     test_path = './data/ToothSegmDataset/testset'
@@ -203,9 +203,6 @@ if __name__ == "__main__":
                 mask_img = pred.astype(np.uint8)
                 cv2.imwrite(os.path.join(save_path, tooth_id, rgb_file.replace('_rgb.jpg', '_mask.jpg')), mask_img)
 
-                mask_img = (pred * (255 // args.num_classes)).astype(np.uint8)
-                cv2.imwrite(os.path.join(save_path, tooth_id, rgb_file.replace('_rgb.jpg', '_mask_vis.jpg')), mask_img)
-
                 # Visualization using original RGB image
                 vis_img = show_anns(img_rgb.astype(np.uint8), pred, tooth_id=int(tooth_id), borders=True)
                 plt.figure(figsize=(5, 5))
@@ -213,4 +210,17 @@ if __name__ == "__main__":
                 plt.imshow(vis_img.astype(np.uint8))
                 plt.axis('off')
                 plt.savefig(os.path.join(save_path, tooth_id, rgb_file.replace('_rgb.jpg', '_vis.jpg')))
+                plt.close()
+
+                # Visualize original image and prediction side by side
+                plt.figure(figsize=(10, 5))
+                plt.subplot(1, 2, 1)
+                plt.title("Image")
+                plt.imshow(img_rgb.astype(np.uint8))
+                plt.axis('off')
+                plt.subplot(1, 2, 2)
+                plt.title("Prediction")
+                plt.imshow(pred.astype(np.uint8), cmap='jet', vmin=0, vmax=8)
+                plt.axis('off')
+                plt.savefig(os.path.join(save_path, tooth_id, rgb_file.replace('_rgb.jpg', '_pred.png')))
                 plt.close()
