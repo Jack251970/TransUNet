@@ -97,6 +97,7 @@ if __name__ == "__main__":
     from torchinfo import summary
     summary(
         net,
-        input_size=(1, 3, args.img_size, args.img_size)
+        input_size=(1, 3, args.img_size, args.img_size),
+        depth=6
     )
     trainer[dataset_name](args, net, snapshot_path)
