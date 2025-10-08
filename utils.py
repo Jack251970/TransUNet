@@ -156,7 +156,7 @@ def test_single_volume_for_tooth(args, image, label, net, classes, patch_size=[2
         sitk.WriteImage(lab_itk, test_save_path + '/' + case + "_gt.nii.gz")\
 
     average_dice = np.mean(metric_list, axis=0)[0]
-    if average_dice > 0.89:
+    if average_dice > 0.91:
         # Visualize
         image = image.squeeze(0).permute(1, 2, 0).numpy()  # (H,W,C)
         label = label  # (H,W)
