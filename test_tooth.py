@@ -10,6 +10,7 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 from matplotlib import pyplot as plt
+from matplotlib.pyplot import tight_layout
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from datasets.dataset_synapse import Synapse_dataset
@@ -213,7 +214,7 @@ if __name__ == "__main__":
                 plt.close()
 
                 # Visualize original image and prediction side by side
-                plt.figure(figsize=(10, 5))
+                plt.figure(figsize=(10, 5), tight_layout=True)
                 plt.subplot(1, 2, 1)
                 plt.title("Image")
                 plt.imshow(img_rgb.astype(np.uint8))
